@@ -51,7 +51,12 @@ fun AddTodoScreen(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Row {
-                    Button(onClick = { onAdd }, enabled = title.isNotBlank()) {
+                    Button(
+                        onClick = {
+                            onAdd
+                        },
+                        enabled = title.isNotBlank()
+                    ) {
                         Text("Add")
                     }
                     Spacer(Modifier.width(8.dp))

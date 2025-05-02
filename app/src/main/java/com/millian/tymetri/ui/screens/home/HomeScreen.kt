@@ -13,6 +13,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
@@ -62,6 +63,7 @@ fun HomeScreen(
         LazyColumn(
             contentPadding = padding,
             modifier = Modifier.fillMaxSize()
+                .background(Color.White),
         ) {
             items(todos, key = { it.id }) { todo ->
                 val swipeState = rememberSwipeToDismissBoxState(
@@ -72,7 +74,8 @@ fun HomeScreen(
                             scope.launch {
                                 val result = snackbarHostState.showSnackbar(
                                     message = "Deleted \"${todo.title}\"",
-                                    actionLabel = "Undo"
+                                    actionLabel = "Undo",
+                                    duration = SnackbarDuration.Short
                                 )
                                 if (result == SnackbarResult.ActionPerformed) {
                                     viewModel.reAddTodo(todo)
@@ -80,7 +83,7 @@ fun HomeScreen(
                             }
                             true
                         } else false
-                    }
+                    },
                 )
 
                 SwipeToDismissBox(
@@ -89,7 +92,7 @@ fun HomeScreen(
                         Box(
                             modifier = Modifier
                                 .fillMaxSize()
-                                .background(Color.Red)
+                                .background(Color.White)
                                 .padding(horizontal = 20.dp),
                             contentAlignment = Alignment.CenterEnd
                         ) {
@@ -101,7 +104,7 @@ fun HomeScreen(
                         }
                     }
                 ) {
-                    TodoItem(todo = todo, onClick = { onTodoClick })
+                    TodoItem(todo = todo, onClick = { onTodoClick(todo) })
                 }
             }
         }

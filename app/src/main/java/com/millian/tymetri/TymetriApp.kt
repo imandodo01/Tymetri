@@ -1,6 +1,7 @@
 package com.millian.tymetri
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -12,7 +13,6 @@ import androidx.navigation.navArgument
 import com.millian.tymetri.data.AppDatabase
 import com.millian.tymetri.ui.common.TodoViewModelFactory
 import com.millian.tymetri.ui.navigation.Screen
-import com.millian.tymetri.ui.screens.add.AddTodoScreen
 import com.millian.tymetri.ui.screens.detail.DetailScreen
 import com.millian.tymetri.ui.screens.edit.EditTodoScreen
 import com.millian.tymetri.ui.screens.home.HomeScreen
@@ -34,12 +34,15 @@ fun TymetriApp() {
             )
         }
         composable(Screen.AddTodo.route) {
-            AddTodoScreen(
-                onAdd = { todo ->
-                    viewModel.addTodo(todo.title, todo.description, todo.isDone)
-                    navController.popBackStack()
-                },
-                onCancel = { navController.popBackStack() }
+            EditTodoScreen(
+                todoId = null,
+                viewModel = viewModel,
+//                onSave = { todo ->
+////                    viewModel.updateTodo(todo.id, todo.title, todo.description, todo.isDone)
+//                    viewModel.addTodo(todo.title, todo.description, todo.isDone)
+//                    navController.popBackStack()
+//                },
+                onBack = { navController.popBackStack() }
             )
         }
         composable(
@@ -62,7 +65,11 @@ fun TymetriApp() {
             EditTodoScreen(
                 todoId = todoId,
                 viewModel = viewModel,
-                onDone = { navController.popBackStack() }
+//                onSave = { todo ->
+//                    viewModel.updateTodo(todo.id, todo.title, todo.description, todo.isDone)
+//                    navController.popBackStack()
+//                },
+                onBack = { navController.popBackStack() }
             )
         }
     }
