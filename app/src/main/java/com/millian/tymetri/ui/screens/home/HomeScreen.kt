@@ -8,7 +8,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -18,6 +17,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.material3.SwipeToDismissBox
@@ -30,7 +30,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -45,6 +44,7 @@ import kotlinx.coroutines.launch
 fun HomeScreen(
     viewModel: HomeViewModel,
     onAddClick: () -> Unit,
+    onArchiveClick: () -> Unit,
     onTodoClick: (Todo) -> Unit
 ) {
     val todos by viewModel.todos.collectAsState()
@@ -53,7 +53,16 @@ fun HomeScreen(
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        topBar = { TopAppBar(title = { Text("To-Do List") }) },
+        topBar = {
+            TopAppBar(
+                title = { Text("To-Do List") },
+                actions = {
+                    TextButton(onClick = onArchiveClick) {
+                        Text("Archive")
+                    }
+                }
+            )
+        },
         floatingActionButton = {
             FloatingActionButton(onClick = onAddClick) {
                 Icon(Icons.Default.Add, contentDescription = "Add")
@@ -62,7 +71,8 @@ fun HomeScreen(
     ) { padding ->
         LazyColumn(
             contentPadding = padding,
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier
+                .fillMaxSize()
                 .background(Color.White),
         ) {
             items(todos, key = { it.id }) { todo ->
@@ -70,19 +80,21 @@ fun HomeScreen(
                     positionalThreshold = { it * 0.5f },
                     confirmValueChange = { value ->
                         if (value == SwipeToDismissBoxValue.EndToStart || value == SwipeToDismissBoxValue.StartToEnd) {
-                            viewModel.deleteTodo(todo)
+                            viewModel.archiveTodo(todo)
                             scope.launch {
                                 val result = snackbarHostState.showSnackbar(
-                                    message = "Deleted \"${todo.title}\"",
+                                    message = "Archived \"${todo.title}\"",
                                     actionLabel = "Undo",
                                     duration = SnackbarDuration.Short
                                 )
                                 if (result == SnackbarResult.ActionPerformed) {
-                                    viewModel.reAddTodo(todo)
+                                    viewModel.restoreTodo(todo.id)
                                 }
                             }
                             true
-                        } else false
+                        } else {
+                            false
+                        }
                     },
                 )
 
@@ -92,15 +104,11 @@ fun HomeScreen(
                         Box(
                             modifier = Modifier
                                 .fillMaxSize()
-                                .background(Color.White)
+                                .background(Color.DarkGray)
                                 .padding(horizontal = 20.dp),
                             contentAlignment = Alignment.CenterEnd
                         ) {
-                            Icon(
-                                Icons.Default.Delete,
-                                contentDescription = "Delete",
-                                tint = Color.White
-                            )
+                            Text("Archive", color = Color.White)
                         }
                     }
                 ) {
@@ -114,11 +122,12 @@ fun HomeScreen(
 @Preview(showBackground = true)
 @Composable
 fun HomeScreenPreview() {
-    val db = AppDatabase.getInstance(LocalContext.current)
+    val db = AppDatabase.getInstance(androidx.compose.ui.platform.LocalContext.current)
     val viewModel: HomeViewModel = viewModel(factory = TodoViewModelFactory(db.todoDao()))
     HomeScreen(
         viewModel = viewModel,
         onAddClick = {},
+        onArchiveClick = {},
         onTodoClick = {}
     )
 }

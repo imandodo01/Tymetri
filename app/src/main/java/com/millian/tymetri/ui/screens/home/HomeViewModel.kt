@@ -11,8 +11,10 @@ import kotlinx.coroutines.launch
 
 class HomeViewModel(private val dao: TodoDao) : ViewModel() {
 
-    // Convert Flow to State using StateFlow
     val todos = dao.getAllTodos()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val archivedTodos = dao.getArchivedTodos()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     fun getTodoById(id: Int): StateFlow<Todo?> {
@@ -23,12 +25,6 @@ class HomeViewModel(private val dao: TodoDao) : ViewModel() {
     fun addTodo(title: String, description: String?, isDone: Boolean) {
         viewModelScope.launch {
             dao.insertTodo(Todo(title = title, description = description, isDone = isDone))
-        }
-    }
-
-    fun reAddTodo(todo: Todo) {
-        viewModelScope.launch {
-            dao.insertTodo(todo.copy(id = 0))
         }
     }
 
@@ -44,9 +40,15 @@ class HomeViewModel(private val dao: TodoDao) : ViewModel() {
         }
     }
 
-    fun deleteTodo(todo: Todo) {
+    fun archiveTodo(todo: Todo) {
         viewModelScope.launch {
-            dao.deleteTodo(todo)
+            dao.archiveTodo(todo.id)
+        }
+    }
+
+    fun restoreTodo(id: Int) {
+        viewModelScope.launch {
+            dao.restoreTodo(id)
         }
     }
 }

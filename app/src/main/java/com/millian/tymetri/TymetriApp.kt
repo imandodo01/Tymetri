@@ -1,7 +1,6 @@
 package com.millian.tymetri
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -13,6 +12,7 @@ import androidx.navigation.navArgument
 import com.millian.tymetri.data.AppDatabase
 import com.millian.tymetri.ui.common.TodoViewModelFactory
 import com.millian.tymetri.ui.navigation.Screen
+import com.millian.tymetri.ui.screens.archive.ArchiveScreen
 import com.millian.tymetri.ui.screens.detail.DetailScreen
 import com.millian.tymetri.ui.screens.edit.EditTodoScreen
 import com.millian.tymetri.ui.screens.home.HomeScreen
@@ -30,18 +30,20 @@ fun TymetriApp() {
             HomeScreen(
                 viewModel = viewModel,
                 onAddClick = { navController.navigate(Screen.AddTodo.route) },
+                onArchiveClick = { navController.navigate(Screen.Archive.route) },
                 onTodoClick = { todo -> navController.navigate(Screen.Detail.createRoute(todo.id)) }
+            )
+        }
+        composable(Screen.Archive.route) {
+            ArchiveScreen(
+                viewModel = viewModel,
+                onBack = { navController.popBackStack() }
             )
         }
         composable(Screen.AddTodo.route) {
             EditTodoScreen(
                 todoId = null,
                 viewModel = viewModel,
-//                onSave = { todo ->
-////                    viewModel.updateTodo(todo.id, todo.title, todo.description, todo.isDone)
-//                    viewModel.addTodo(todo.title, todo.description, todo.isDone)
-//                    navController.popBackStack()
-//                },
                 onBack = { navController.popBackStack() }
             )
         }
@@ -65,10 +67,6 @@ fun TymetriApp() {
             EditTodoScreen(
                 todoId = todoId,
                 viewModel = viewModel,
-//                onSave = { todo ->
-//                    viewModel.updateTodo(todo.id, todo.title, todo.description, todo.isDone)
-//                    navController.popBackStack()
-//                },
                 onBack = { navController.popBackStack() }
             )
         }
