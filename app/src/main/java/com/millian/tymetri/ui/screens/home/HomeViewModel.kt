@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.millian.tymetri.data.dao.TodoDao
 import com.millian.tymetri.model.Todo
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
@@ -17,10 +18,7 @@ class HomeViewModel(private val dao: TodoDao) : ViewModel() {
     val archivedTodos = dao.getArchivedTodos()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    fun getTodoById(id: Int): StateFlow<Todo?> {
-        return dao.getTodoById(id)
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
-    }
+    fun getTodoById(id: Int): Flow<Todo?> = dao.getTodoById(id)
 
     fun addTodo(title: String, description: String?, isDone: Boolean) {
         viewModelScope.launch {

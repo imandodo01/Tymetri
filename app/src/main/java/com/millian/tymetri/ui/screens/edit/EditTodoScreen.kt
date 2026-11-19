@@ -1,7 +1,5 @@
 package com.millian.tymetri.ui.screens.edit
 
-import android.annotation.SuppressLint
-import android.util.Log
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -14,7 +12,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -23,19 +20,19 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.Checkbox
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.millian.tymetri.ui.screens.home.HomeViewModel
+import com.millian.tymetri.ui.screens.home.TodoLoadState
 
-@SuppressLint("UnrememberedMutableState")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditTodoScreen(
@@ -43,87 +40,124 @@ fun EditTodoScreen(
     viewModel: HomeViewModel,
     onBack: () -> Unit
 ) {
-    // State for loading indicator and form data
-    var isLoading by remember { mutableStateOf(true) }
-
-    // Get existing todo data (assuming you are using collectAsState)
-    val existingTodo = todoId?.let { viewModel.getTodoById(it).collectAsState(initial = null) }?.value
-
-    // Set loading to false once data is fetched
-    LaunchedEffect(existingTodo, todoId) {
-        if (todoId == null || existingTodo != null) {
-            isLoading = false  // Set loading to false when data is available
+    val loadState by produceState<TodoLoadState>(
+        initialValue = if (todoId == null) {
+            TodoLoadState.Loaded(null)
+        } else {
+            TodoLoadState.Loading
+        },
+        key1 = todoId
+    ) {
+        if (todoId != null) {
+            viewModel.getTodoById(todoId).collect { todo ->
+                value = TodoLoadState.Loaded(todo)
+            }
         }
     }
 
-    // Show CircularProgressIndicator while loading
-    if (isLoading) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp)
+    when (val state = loadState) {
+        TodoLoadState.Loading -> Box(
+            modifier = Modifier.fillMaxSize().padding(16.dp),
+            contentAlignment = Alignment.Center
         ) {
-            CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+            CircularProgressIndicator()
         }
-    } else {
-        // Form to either edit or add
-        Log.e("testing", mutableStateOf(existingTodo?.title ?: "").toString())
-        var title by remember { mutableStateOf(existingTodo?.title ?: "") }
-        var description by remember { mutableStateOf(existingTodo?.description ?: "") }
-        var isDone by remember { mutableStateOf(existingTodo?.isDone ?: false) }
+        is TodoLoadState.Loaded -> {
+            val existingTodo = state.todo
 
-        Scaffold(
-            topBar = {
-                TopAppBar(
-                    title = { Text(if (todoId == null) "Add Todo" else "Edit Todo") },
-                    navigationIcon = {
-                        IconButton(onClick = { onBack() }) {
-                            Icon(Icons.AutoMirrored.Default.ArrowBack, contentDescription = "Back")
-                        }
-                    },
-                    actions = {
-                        IconButton(onClick = {
-                            if (title.isNotBlank()) {
-                                if (todoId == null) {
-                                    viewModel.addTodo(title, description, isDone)
-                                } else {
-                                    viewModel.updateTodo(todoId, title, description, isDone)
+            if (todoId != null && existingTodo == null) {
+                Scaffold(
+                    topBar = {
+                        TopAppBar(
+                            title = { Text("Edit Todo") },
+                            navigationIcon = {
+                                IconButton(onClick = onBack) {
+                                    Icon(Icons.AutoMirrored.Default.ArrowBack, contentDescription = "Back")
                                 }
-                                onBack()
                             }
-                        }) {
-                            Icon(Icons.Default.Check, contentDescription = "Save")
+                        )
+                    }
+                ) { padding ->
+                    Box(
+                        modifier = Modifier.fillMaxSize().padding(padding),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("Todo not found or is archived")
+                    }
+                }
+            } else {
+                var title by remember(todoId, existingTodo?.id) {
+                    mutableStateOf(existingTodo?.title.orEmpty())
+                }
+                var description by remember(todoId, existingTodo?.id) {
+                    mutableStateOf(existingTodo?.description.orEmpty())
+                }
+                var isDone by remember(todoId, existingTodo?.id) {
+                    mutableStateOf(existingTodo?.isDone ?: false)
+                }
+                var titleError by remember(todoId, existingTodo?.id) {
+                    mutableStateOf(false)
+                }
+
+                Scaffold(
+                    topBar = {
+                        TopAppBar(
+                            title = { Text(if (todoId == null) "Add Todo" else "Edit Todo") },
+                            navigationIcon = {
+                                IconButton(onClick = onBack) {
+                                    Icon(Icons.AutoMirrored.Default.ArrowBack, contentDescription = "Back")
+                                }
+                            },
+                            actions = {
+                                IconButton(onClick = {
+                                    if (title.isBlank()) {
+                                        titleError = true
+                                    } else {
+                                        if (todoId == null) {
+                                            viewModel.addTodo(title.trim(), description, isDone)
+                                        } else {
+                                            viewModel.updateTodo(todoId, title.trim(), description, isDone)
+                                        }
+                                        onBack()
+                                    }
+                                }) {
+                                    Icon(Icons.Default.Check, contentDescription = "Save")
+                                }
+                            }
+                        )
+                    }
+                ) { padding ->
+                    Column(
+                        modifier = Modifier.padding(padding).padding(16.dp)
+                    ) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        OutlinedTextField(
+                            value = title,
+                            onValueChange = {
+                                title = it
+                                if (it.isNotBlank()) titleError = false
+                            },
+                            label = { Text("Title") },
+                            isError = titleError,
+                            supportingText = {
+                                if (titleError) Text("Title is required")
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        OutlinedTextField(
+                            value = description,
+                            onValueChange = { description = it },
+                            label = { Text("Description") },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Checkbox(checked = isDone, onCheckedChange = { isDone = it })
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Mark as done")
                         }
                     }
-                )
-            }
-        ) { padding ->
-            Column(
-                modifier = Modifier
-                    .padding(padding)
-                    .padding(16.dp)
-            ) {
-                Spacer(modifier = Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = title,
-                    onValueChange = { title = it },
-                    label = { Text("Title") },
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = description,
-                    onValueChange = { description = it },
-                    label = { Text("Description") },
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Checkbox(checked = isDone, onCheckedChange = { isDone = it })
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Mark as done")
                 }
             }
         }
