@@ -15,7 +15,11 @@ import androidx.compose.ui.unit.dp
 import com.millian.tymetri.model.Todo
 
 @Composable
-fun TodoItem(todo: Todo, onClick: () -> Unit) {
+fun TodoItem(
+    todo: Todo,
+    onClick: () -> Unit,
+    onToggleDone: (Boolean) -> Unit
+) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -35,7 +39,7 @@ fun TodoItem(todo: Todo, onClick: () -> Unit) {
             )
             Checkbox(
                 checked = todo.isDone,
-                onCheckedChange = { onClick() }
+                onCheckedChange = onToggleDone
             )
         }
     }

@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -39,6 +40,34 @@ class TodoArchiveTest {
 
             assertEquals(todo.id, dao.getAllTodos().first().single().id)
             assertEquals(0, dao.getArchivedTodos().first().size)
+        } finally {
+            database.close()
+        }
+    }
+
+    @Test
+    fun completionCanBeToggledWithoutChangingTaskIdentity() = runBlocking {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val database = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java)
+            .allowMainThreadQueries()
+            .build()
+
+        try {
+            val dao = database.todoDao()
+            dao.insertTodo(Todo(title = "Complete a task"))
+
+            val original = dao.getAllTodos().first().single()
+            dao.updateTodo(original.copy(isDone = true))
+
+            val completed = dao.getAllTodos().first().single()
+            assertTrue(completed.isDone)
+            assertEquals(original.id, completed.id)
+
+            dao.updateTodo(completed.copy(isDone = false))
+
+            val reopened = dao.getAllTodos().first().single()
+            assertFalse(reopened.isDone)
+            assertEquals(original.id, reopened.id)
         } finally {
             database.close()
         }

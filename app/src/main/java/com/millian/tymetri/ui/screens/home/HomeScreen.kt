@@ -83,7 +83,7 @@ fun HomeScreen(
                             viewModel.archiveTodo(todo)
                             scope.launch {
                                 val result = snackbarHostState.showSnackbar(
-                                    message = "Archived \"${todo.title}\"",
+                                    message = "Archived \"\${todo.title}\"",
                                     actionLabel = "Undo",
                                     duration = SnackbarDuration.Short
                                 )
@@ -112,7 +112,18 @@ fun HomeScreen(
                         }
                     }
                 ) {
-                    TodoItem(todo = todo, onClick = { onTodoClick(todo) })
+                    TodoItem(
+                        todo = todo,
+                        onClick = { onTodoClick(todo) },
+                        onToggleDone = { isDone ->
+                            viewModel.updateTodo(
+                                id = todo.id,
+                                title = todo.title,
+                                description = todo.description,
+                                isDone = isDone
+                            )
+                        }
+                    )
                 }
             }
         }
